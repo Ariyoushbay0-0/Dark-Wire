@@ -26,7 +26,7 @@ class Cripto:
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
 
-    def rsa_encrypt_msg(self, pub_B_ser, data):
+    def rsa_encrypt_msg(self, pub_B_ser, data) -> bytes:
         pub_b = load_pem_public_key(pub_B_ser)
         assert isinstance(pub_b, RSAPublicKey)
 
@@ -38,8 +38,8 @@ class Cripto:
                 algorithm=hashes.SHA256(),
                 label=None
             ))
-        elif len(data) > 290:
-            return 90
+        else:
+            raise ValueError("message too long for RSA")
 
     def rsa_decrypt_msg(self, data):
         return self.pri_key.decrypt(data, asym_padding.OAEP(
@@ -70,18 +70,3 @@ class Cripto:
 
         unpadder = sym_padding.PKCS7(128).unpadder()
         return unpadder.update(padded) + unpadder.finalize()
-
-
-
-c = Cripto()
-c.make_aes_key()
-
-# تست AES
-encrypted = c.aes_encrypt("salam")
-decrypted = c.aes_decrypt(encrypted)
-print(decrypted)
-
-# تست RSA
-enc = c.rsa_encrypt_msg(c.pub_ser, "hi")
-dec = c.rsa_decrypt_msg(enc)
-print(dec)
