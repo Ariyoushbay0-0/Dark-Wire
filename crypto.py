@@ -25,13 +25,16 @@ class Cripto:
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
+        self.aes_key = None
+        self.aes_iv = None
 
-    def rsa_encrypt_msg(self, pub_B_ser, data) -> bytes:
+    def rsa_encrypt_msg(self, pub_B_ser: bytes, data) -> bytes:
         pub_b = load_pem_public_key(pub_B_ser)
         assert isinstance(pub_b, RSAPublicKey)
 
         if isinstance(data, str):
             data = data.encode("utf-8")
+
         if len(data) <= 290:
             return pub_b.encrypt(data, asym_padding.OAEP(
                 mgf=asym_padding.MGF1(algorithm=hashes.SHA256()),
@@ -39,9 +42,10 @@ class Cripto:
                 label=None
             ))
         else:
-            raise ValueError("message too long for RSA")
+            # fallback to AES for long messages
+            return self.aes_encrypt(data)
 
-    def rsa_decrypt_msg(self, data):
+    def rsa_decrypt_msg(self, data: bytes) -> bytes:
         return self.pri_key.decrypt(data, asym_padding.OAEP(
             mgf=asym_padding.MGF1(algorithm=hashes.SHA256()),
             algorithm=hashes.SHA256(),
@@ -52,7 +56,11 @@ class Cripto:
         self.aes_key = os.urandom(32)
         self.aes_iv = os.urandom(16)
 
-    def aes_encrypt(self, data):
+    def load_aes_key(self, key_iv: bytes):
+        self.aes_key = key_iv[:32]
+        self.aes_iv = key_iv[32:]
+
+    def aes_encrypt(self, data: bytes) -> bytes:
         if isinstance(data, str):
             data = data.encode("utf-8")
 
@@ -63,7 +71,7 @@ class Cripto:
         encryptor = cipher.encryptor()
         return encryptor.update(padded) + encryptor.finalize()
 
-    def aes_decrypt(self, data):
+    def aes_decrypt(self, data: bytes) -> bytes:
         cipher = Cipher(algorithms.AES(self.aes_key), modes.CBC(self.aes_iv))
         decryptor = cipher.decryptor()
         padded = decryptor.update(data) + decryptor.finalize()
