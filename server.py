@@ -87,16 +87,13 @@ class Server:
     
         print(f"\n[you]: sent file → {file_name}")
 
-    def start(self):
-        self.hanshake()
-    
-        t_recv = threading.Thread(target=self.recv_msg)
-        t_recv.daemon = True
-        t_recv.start()
-    
         while True:
             msg = input(f"[{self.my_name}]: ")
             if msg.startswith("/file "):
-                self.send_file(msg[6:])
+                path = msg[6:].strip()
+                if not path:
+                    print("usage: /file /path/to/file")
+                    continue
+                self.send_file(path)
             else:
                 self.send_msg(msg)
