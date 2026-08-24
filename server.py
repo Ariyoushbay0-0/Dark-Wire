@@ -17,4 +17,12 @@ class Server:
         
         print("standby for connect . . .")
         self.conn, self.addr = self.s.accept()
+        self.keys = crypto.Cripto()
         print(f"connected: {self.addr}")
+    def hanshake(self): 
+        self.conn.send(self.keys.pub_ser)
+        pub_B_ser = self.conn.recv(4096)
+
+        self.keys.make_aes_key()
+        encrypted_AES = self.keys.rsa_encrypt_msg(pub_B_ser, self.keys.aes_key + self.keys.aes_iv)
+        self.conn.send(encrypted_AES)
